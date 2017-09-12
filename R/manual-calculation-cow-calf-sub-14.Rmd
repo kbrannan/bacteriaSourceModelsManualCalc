@@ -1,0 +1,189 @@
+---
+title: 'R Notebook: Manual Calculation of Bacteria Loads for Cow-Calf Model'
+output:
+  html_notebook: default
+  html_document: default
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+ Shift+Enter*. 
+# Manual Calculation
+## Gerneral Information
+```{r}
+chr.watershed <- "Big Elk Creek Sub-Wtsd 14"
+chr.DateInputFileCreated <- "2013-05-10"
+chr.sub.cur <- gsub("[^0-9]","",chr.watershed)
+```
+## Input Data
+Values taken from Cow-Calf Bacteria Source Model Input File: cowcalf13.txt
+### Land Use Information (ac)
+```{r}
+num.Pasture.Area <- 218.1
+num.Forest.Area <- 2245.3
+num.Percent.pasture.with.stream.access <- 5.0000000E+00
+num.Percent.forest.with.stream.access <- 1.4781340E-01
+```
+### Animal Management Information
+Average Stocking Density (ac/animal):
+```{r}
+num.Average.Stocking.Density.for.Pasture.in.watershed <- 5.0000000E+00
+```
+Temporal Distribution of Pair size with Calf Growth:
+```{r}
+df.Adjusted.animal.size <-data.frame(month=c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"),
+                                     ad.size=c(1.15,1.35,1.39,1.43,1.47,1.51,1.55,1.59,1.63,1,1.05,1.1))
+```
+Temporal Distribution grazing Schedule:
+```{r}
+df.dist.sched <- data.frame(month=c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"),
+                            dist.pasture=c(0.25,0.25,0.75,0.75,0.75,1,0.75,0.75,0.75,0.25,0.25,0.25),
+                            dist.confinement=c(0.75,0.75,0.25,0.25,0.25,0,0,0,0,0.75,0.75,0.75),
+                            dist.forest=c(0,0,0,0,0,0,0.25,0.25,0.25,0,0,0))
+```
+### Animal Information
+```{r}
+num.fecal.coliform.production.by.animal <- 1.0000000E+09
+num.SQOLIM.mult.factor <- 9
+num.percent.animals.on.pasture.in.around.streams <- 5.0000000E+00
+num.percent.animals.on.forest.in.around.streams <- 5.0000000E+00
+```
+
+## Calculations
+### Total Number of Cows
+```{r}
+num.total <- num.Pasture.Area / num.Average.Stocking.Density.for.Pasture.in.watershed
+```
+### Pairs Growth Throughout Year
+```{r}
+df.total.monthly <- data.frame(month = df.Adjusted.animal.size$month,  
+                               pairs = num.total * df.Adjusted.animal.size$ad.size)
+```
+### Locations of Pairs throughout Year
+```{r}
+df.dist.sched.lu <- data.frame(month = df.dist.sched$month,
+                               pairs.confine = df.dist.sched$dist.confinement * df.total.monthly$pairs,
+                               pairs.pasture = df.dist.sched$dist.pasture * df.total.monthly$pairs,
+                               pairs.forest = df.dist.sched$dist.forest * df.total.monthly$pairs)
+df.dist.sched.lu.chk <- rowSums(df.dist.sched.lu[2:4]) - df.total.monthly$pairs
+```
+### Pairs in Stream or on Land
+#### Pasture
+```{r}
+num.pairs.pasture.no.sa <- (1 - num.Percent.pasture.with.stream.access/100) *
+  df.dist.sched.lu$pairs.pasture
+num.pairs.pasture.with.sa <- (num.Percent.pasture.with.stream.access/100) *
+  df.dist.sched.lu$pairs.pasture
+num.pairs.pasture.in.stream <- (num.percent.animals.on.pasture.in.around.streams/100) * num.pairs.pasture.with.sa
+num.pairs.pasture.on.land <- num.pairs.pasture.no.sa + (1 - num.percent.animals.on.pasture.in.around.streams/100) * num.pairs.pasture.with.sa
+df.dist.pairs.pasture <- data.frame(month = df.dist.sched.lu$month,
+                                    on.land = num.pairs.pasture.on.land,
+                                    in.stream = num.pairs.pasture.in.stream)
+df.dist.pairs.pasture.chk <- rowSums(df.dist.pairs.pasture[2:3]) - df.dist.sched.lu$pairs.pasture
+```
+#### Forest
+```{r}
+num.pairs.forest.no.sa <- (1 - num.Percent.forest.with.stream.access/100) *
+  df.dist.sched.lu$pairs.forest
+num.pairs.forest.with.sa <- (num.Percent.forest.with.stream.access/100) *
+  df.dist.sched.lu$pairs.forest
+num.pairs.forest.in.stream <- (num.percent.animals.on.forest.in.around.streams/100) * num.pairs.forest.with.sa
+num.pairs.forest.on.land <- num.pairs.forest.no.sa + (1 - num.percent.animals.on.forest.in.around.streams/100) * num.pairs.forest.with.sa
+df.dist.pairs.forest <- data.frame(month = df.dist.sched.lu$month,
+                                    on.land = num.pairs.forest.on.land,
+                                    in.stream = num.pairs.forest.in.stream)
+df.dist.pairs.forest.chk <- rowSums(df.dist.pairs.forest[2:3]) - df.dist.sched.lu$pairs.forest
+```
+#### In Stream
+```{r}
+df.dist.pairs.in.stream <- data.frame(month = df.dist.sched.lu$month,
+                                      in.stream = df.dist.pairs.pasture$in.stream + 
+                                        df.dist.pairs.forest$in.stream)
+```
+#### Pairs Distribution over months across land uses
+``` {r}
+df.dist.pairs <- data.frame(month = df.dist.sched$month,
+                            in.confinement = df.dist.sched.lu$pairs.confine,
+                            on.land.pasture = df.dist.pairs.pasture$on.land,
+                            on.land.forest = df.dist.pairs.forest$on.land,
+                            in.stream = df.dist.pairs.in.stream$in.stream)
+df.dist.pairs.chk <- rowSums(df.dist.pairs[,2:5]) - df.total.monthly$pairs
+```
+
+### Bacteria in Stream or on Land
+#### General
+```{r}
+df.dist.bacteria <- data.frame(month = df.dist.pairs$month,
+                            in.confinement = df.dist.pairs$in.confinement * num.fecal.coliform.production.by.animal,
+                            on.land.pasture = df.dist.pairs$on.land.pasture * num.fecal.coliform.production.by.animal,
+                            on.land.forest = df.dist.pairs$on.land.forest * num.fecal.coliform.production.by.animal,
+                            in.stream = df.dist.pairs$in.stream * num.fecal.coliform.production.by.animal)
+```
+#### Mon-Accum
+```{r}
+df.dist.bacteria.accum <- data.frame(month = df.dist.bacteria$month,
+                                     accum.pasture = df.dist.bacteria$on.land.pasture / num.Pasture.Area,
+                                     accum.forest = df.dist.bacteria$on.land.forest / num.Forest.Area)
+```
+#### Mon-Sqolim
+```{r}
+df.dist.bacteria.sqolim <- data.frame(month = df.dist.bacteria$month,
+                                     sqolim.pasture = df.dist.bacteria.accum$accum.pasture * num.SQOLIM.mult.factor,
+                                     sqolim.pasture = df.dist.bacteria.accum$accum.forest * num.SQOLIM.mult.factor)
+```
+
+### Manual Calculation output data.frame
+```{r}
+df.output.manual <- data.frame(sub = chr.sub.cur, Month = df.total.monthly$month, num.of.pairs = num.total, 
+                               au = df.total.monthly$pairs, 
+                               pairs.on.pasture.on.land = df.dist.pairs.pasture$on.land,
+                               pairs.on.pasture.in.stream = df.dist.pairs.pasture$in.stream,
+                               pairs.in.confinment = df.dist.sched.lu$pairs.confine,
+                               pairs.in.forest.on.land = df.dist.pairs.forest$on.land,
+                               pairs.in.forest.in.stream = df.dist.pairs.forest$in.stream,
+                               Bacteria.on.pasture.on.land = df.dist.pairs.pasture$on.land *
+                                 num.fecal.coliform.production.by.animal,
+                               Bacteria.on.pasture.to.stream = df.dist.pairs.pasture$in.stream *
+                                 num.fecal.coliform.production.by.animal,
+                               Bacteria.in.confinement = df.dist.sched.lu$pairs.confine *
+                                 num.fecal.coliform.production.by.animal,
+                               Bacteria.in.forest.on.land = df.dist.pairs.forest$on.land *
+                                 num.fecal.coliform.production.by.animal,
+                               Bacteria.in.forest.to.stream = df.dist.pairs.forest$in.stream *
+                                 num.fecal.coliform.production.by.animal,
+                               Bacteria.direct.to.stream = df.dist.pairs$in.stream *
+                                 num.fecal.coliform.production.by.animal,
+                               Accum.pasture = df.dist.pairs.pasture$on.land *
+                                 num.fecal.coliform.production.by.animal / num.Pasture.Area,
+                               Accum.forest = df.dist.pairs.forest$on.land *
+                                 num.fecal.coliform.production.by.animal / num.Forest.Area,
+                               Lim.pasture = num.SQOLIM.mult.factor * df.dist.pairs.pasture$on.land *
+                                 num.fecal.coliform.production.by.animal / num.Pasture.Area,
+                               Lim.forest = num.SQOLIM.mult.factor * df.dist.pairs.forest$on.land *
+                                 num.fecal.coliform.production.by.animal / num.Forest.Area
+                               )
+```
+# Model
+## General Input
+```{r}
+library(bacteriaSourceModels)
+chr.dir.main <- "M:/Models/Bacteria/HSPF/bacteriaSourceModelsManualCalc"
+chr.dir.input <- paste0(chr.dir.main, "/R/model-input-tpl-txt/cow-calf")
+chr.dirs.sub.models <- list.dirs(path = chr.dir.input, full.names = FALSE)
+chr.dirs.sub.models <- chr.dirs.sub.models[nchar(chr.dirs.sub.models) > 0]
+chr.file.sup <- "bigelkwq.sup"
+chr.file.uci <- "bigelkwq.uci"
+chr.name.wtsd <- "Big Elk Creek"
+chr.file.out <- "model.out"
+```
+## Run model for a single sub-watershed input file
+```{r}
+df.output.model <-  cow.calf(paste0(chr.dir.input, "/cowcalf",chr.sub.cur, ".txt"))
+```
+# Comparison
+```{r}
+df.output.comp <- data.frame(df.output.manual[, c(1,2)], 
+                             df.output.manual[, -1 * c(1,2)] - 
+                               df.output.model[, -1 * c(1,2)])
+summary(df.output.comp[, -1*c(1,2)])
+```

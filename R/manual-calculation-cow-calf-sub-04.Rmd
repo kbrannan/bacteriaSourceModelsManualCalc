@@ -167,8 +167,8 @@ df.output.manual <- data.frame(sub = chr.sub.cur, Month = df.total.monthly$month
 ## General Input
 ```{r}
 library(bacteriaSourceModels)
-chr.dir.main <- "M:/Models/Bacteria/HSPF/bacteriaSourceModelsTesting"
-chr.dir.input <- paste0(chr.dir.main, "/model-input-tpl-txt/cow-calf")
+chr.dir.main <- "M:/Models/Bacteria/HSPF/bacteriaSourceModelsManualCalc"
+chr.dir.input <- paste0(chr.dir.main, "/R/model-input-tpl-txt/cow-calf")
 chr.dirs.sub.models <- list.dirs(path = chr.dir.input, full.names = FALSE)
 chr.dirs.sub.models <- chr.dirs.sub.models[nchar(chr.dirs.sub.models) > 0]
 chr.file.sup <- "bigelkwq.sup"

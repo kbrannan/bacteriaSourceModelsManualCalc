@@ -1,0 +1,21 @@
+*** On-Stite and Pets Bacteria Source Model Input File:
+Watershed:Big Elk Creek Sub-Wtsd 17
+Date this Input File Created: 2016-05-18
+*** Land Use Information:
+Residential/Agricultural Operration Area/Commercial/Urban/Transportation (ac): 5.9
+*** Bacteria production rates:
+On-site systems (orgs/system-day):           9.0000000E+11
+Pet (orgs/pet-day):           7.0000000E+09
+SQOLIM multiplcation factor: 9
+*** Pet Information:
+Number of House-Holds: 28
+Pets per House-Hold: 1
+*** On-site Information:
+Number of near-stream structures: 7
+Structures for house age pre-1974  (%): 47
+Structures for house age 1974-1986 (%): 21
+Structures for house age post-1986 (%): 33
+Failure rate for house age pre-1974  (%):           1.0000000E+01
+Failure rate for house age 1974-1986 (%):           1.0000000E+01
+Failure rate for house age post-1986 (%):             1.0000000E+00
+On-site Failure directly to stream (%):           1.0000000E+00
