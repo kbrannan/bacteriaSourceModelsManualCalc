@@ -1,0 +1,117 @@
+---
+title: 'R Notebook: Manual Calculation of Bacteria Loads for Onsite-Pets Model'
+output:
+  html_notebook: default
+  html_document: default
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+ Shift+Enter*. 
+# Manual Calculation
+## Gerneral Information
+```{r}
+chr.watershed <- "Big Elk Creek Sub-Wtsd 11"
+chr.DateInputFileCreated <- "2016-05-18"
+chr.sub.cur <- gsub("[^0-9]","",chr.watershed)
+```
+## Input Data
+Values taken from Onsite-Pets Bacteria Source Model Input File: OnSitePets11.txt
+### Land Use Information (ac)
+```{r}
+num.RAOCUT.Area <- 28.1
+```
+### Source Information
+```{r}
+num.fecal.coliform.production.by.hh <- 9.0000000E+11
+num.fecal.coliform.production.by.pets <- 7.0000000E+09
+num.SQOLIM.mult.factor <- 9
+num.hh <- 111
+num.pets.hh <- 1
+num.near.strm.struc <- 0
+num.house.age.pre1974 <- 47
+num.house.age.19741986 <- 21
+num.house.age.post1986 <- 33
+num.fail.rate.pre1974 <- 10
+num.fail.rate.19741986 <- 10
+num.fail.rate.post1986 <- 1
+num.fail.to.stream <- 1
+```
+
+## Calculations
+### Pets
+```{r}
+num.total.pets <- num.hh * num.pets.hh
+```
+### On-site
+```{r}
+num.near.strm.struc.pre1974 <- num.near.strm.struc * num.house.age.pre1974 / 100
+num.near.strm.struc.19741986 <- num.near.strm.struc * num.house.age.19741986 / 100
+num.near.strm.struc.post1986 <- num.near.strm.struc * num.house.age.post1986 / 100
+num.near.strm.struc.fail.pre1974 <- num.near.strm.struc.pre1974 * num.fail.rate.pre1974 / 100
+num.near.strm.struc.fail.19741986 <- num.near.strm.struc.19741986 * num.fail.rate.19741986 / 100
+num.near.strm.struc.fail.post1986 <- num.near.strm.struc.post1986 * num.fail.rate.post1986 / 100
+num.near.strm.struc.fail <- num.near.strm.struc.fail.pre1974 + num.near.strm.struc.fail.19741986 +
+  num.near.strm.struc.fail.post1986
+num.near.strm.struc.fail.to.stream <- num.near.strm.struc.fail * num.fail.to.stream / 100
+num.near.strm.struc.fail.to.land <- num.near.strm.struc.fail * (1 - num.fail.to.stream / 100)
+```
+
+
+### Manual Calculation output data.frame
+```{r}
+df.output.manual <- data.frame(sub = chr.sub.cur, 
+                               Month = format(as.POSIXct(paste0("1967-",1:12,"-01")), format = "%b"),
+                               pop.pet.total = num.total.pets,
+                               num.onsite.NearStrmStrctPre1974 = num.near.strm.struc.pre1974,
+                               num.onsite.NearStrmStrct1974to1986 = num.near.strm.struc.19741986,
+                               num.onsite.NearStrmStrctPost1986 = num.near.strm.struc.post1986,
+                               num.onsite.NearStrmStrct = num.near.strm.struc,
+                               num.onsite.NearStrmStrctFailurePre1974 = num.near.strm.struc.fail.pre1974,
+                               num.onsite.NearStrmStrctFailure1974to1986 = num.near.strm.struc.fail.19741986,
+                               num.onsite.NearStrmStrctFailurePost1986 = num.near.strm.struc.fail.post1986,
+                               num.onsite.NearStrmStrctFailure = num.near.strm.struc.fail,
+                               num.onsite.NearStrmStrctFailureInStream = num.near.strm.struc.fail.to.stream,
+                               Bacteria.pets.load = num.total.pets * num.fecal.coliform.production.by.pets,
+                               Bacteria.onsite.NearStrmStrctFailurePre1974 = 
+                                 num.near.strm.struc.fail.pre1974 * num.fecal.coliform.production.by.hh,
+                               Bacteria.onsite.NearStrmStrctFailure1974to1986 =
+                                 num.near.strm.struc.fail.19741986 * num.fecal.coliform.production.by.hh,
+                               Bacteria.onsite.NearStrmStrctFailurePost1986 = 
+                                 num.near.strm.struc.fail.post1986 * num.fecal.coliform.production.by.hh,
+                               Bacteria.onsite.NearStrmStrctFailure = 
+                                 num.near.strm.struc.fail * num.fecal.coliform.production.by.hh,
+                               Bacteria.direct.to.stream = 
+                                 num.near.strm.struc.fail.to.stream * num.fecal.coliform.production.by.hh,
+                               Accum.RAOCUT = ((num.total.pets * num.fecal.coliform.production.by.pets) + 
+                                                 (num.near.strm.struc.fail.to.land *
+                                                    num.fecal.coliform.production.by.hh)) / num.RAOCUT.Area,
+                               Lim.RAOCUT = num.SQOLIM.mult.factor * 
+                                 ((num.total.pets * num.fecal.coliform.production.by.pets) + 
+                                    (num.near.strm.struc.fail.to.land *
+                                       num.fecal.coliform.production.by.hh)) / num.RAOCUT.Area)
+```
+# Model
+## General Input
+```{r}
+library(bacteriaSourceModels)
+chr.dir.main <- "M:/Models/Bacteria/HSPF/bacteriaSourceModelsManualCalc"
+chr.dir.input <- paste0(chr.dir.main, "/R/model-input-tpl-txt/onsite-pets")
+chr.dirs.sub.models <- list.dirs(path = chr.dir.input, full.names = FALSE)
+chr.dirs.sub.models <- chr.dirs.sub.models[nchar(chr.dirs.sub.models) > 0]
+chr.file.sup <- "bigelkwq.sup"
+chr.file.uci <- "bigelkwq.uci"
+chr.name.wtsd <- "Big Elk Creek"
+chr.file.out <- "model.out"
+```
+## Run model for a single sub-watershed input file
+```{r}
+df.output.model <-  onsite.pets(paste0(chr.dir.input, "/onsitepets",chr.sub.cur, ".txt"))
+```
+# Comparison
+```{r}
+df.output.comp <- data.frame(df.output.manual[, c(1,2)], 
+                             df.output.manual[, -1 * c(1,2)] - 
+                               df.output.model[, -1 * c(1,2)])
+summary(df.output.comp[, -1*c(1,2)])
+```
