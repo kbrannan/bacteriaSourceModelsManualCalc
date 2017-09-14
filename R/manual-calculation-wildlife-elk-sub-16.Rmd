@@ -1,0 +1,200 @@
+---
+title: 'R Notebook: Manual Calculation of Bacteria Loads for WIldlife-Elk Model'
+output:
+  html_notebook: default
+  html_document: default
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+ Shift+Enter*. 
+# Manual Calculation
+## Gerneral Information
+```{r}
+chr.watershed <- "Big Elk Creek Sub-Wtsd 16"
+chr.DateInputFileCreated <- "2016-06-02"
+chr.sub.cur <- gsub("[^0-9]","",chr.watershed)
+```
+## Input Data
+Values taken from Onsite-Pets Bacteria Source Model Input File: wildlifeElk16.txt
+### Months of seasons
+```{r}
+num.months.season.1 <- c(11,12,1,2,3)
+num.months.season.2 <- c(4,5,6,7,8,9,10)
+```
+### Habitat areas(ac.)
+```{r}
+num.season.1.pasture.hab.area <- 12.48
+num.season.1.forest.hab.area  <- 198.09
+num.season.2.pasture.hab.area <- 0.66
+num.season.2.forest.hab.area  <- 14.67
+```
+### Precent of habitat with stream access
+```{r}
+num.season.1.pasture.w.strm <- 25
+num.season.1.forest.w.strm  <- 50
+num.season.2.pasture.w.strm <- 15
+num.season.2.forest.w.strm  <- 39
+```
+### Animal density for habitat (animal/ac)
+```{r}
+num.season.1.pasture.ad <- 5.0000000E-02
+num.season.1.forest.ad  <- 5.0000000E-02
+num.season.2.pasture.ad <- 1.0000000E-02
+num.season.2.forest.ad  <- 1.0000000E-02
+```
+### Percent of animals in and around stream
+```{r}
+num.season.1.pasture.in.around.strm <- 1.0000000E+01
+num.season.1.forest.in.around.strm  <- 1.0000000E+01
+num.season.2.pasture.in.around.strm <- 1.0000000E+01
+num.season.2.forest.in.around.strm  <- 1.0000000E+01
+```
+### Source Information
+```{r}
+num.fecal.coliform.production.by.animal <- 8.6000000E+08
+num.SQOLIM.mult.factor <- 9
+```
+## Calculations
+### Habitat
+#### without stream sccess
+```{r}
+num.season.1.pasture.hab.wo <- (1 - num.season.1.pasture.w.strm / 100) * 
+  num.season.1.pasture.hab.area
+num.season.1.forest.hab.wo  <- (1 - num.season.1.forest.w.strm / 100) * 
+  num.season.1.forest.hab.area
+num.season.2.pasture.hab.wo <- (1 - num.season.2.pasture.w.strm / 100) * 
+  num.season.2.pasture.hab.area
+num.season.2.forest.hab.wo  <- (1 - num.season.2.forest.w.strm / 100) * 
+  num.season.2.forest.hab.area
+```
+#### with stream access
+```{r}
+num.season.1.pasture.hab.w <- (num.season.1.pasture.w.strm / 100) * 
+  num.season.1.pasture.hab.area
+num.season.1.forest.hab.w  <- (num.season.1.forest.w.strm / 100) * 
+  num.season.1.forest.hab.area
+num.season.2.pasture.hab.w <- (num.season.2.pasture.w.strm / 100) * 
+  num.season.2.pasture.hab.area
+num.season.2.forest.hab.w  <- (num.season.2.forest.w.strm / 100) * 
+  num.season.2.forest.hab.area
+```
+#### Populations
+##### overall
+```{r}
+num.season.1.pasture.pop <- num.season.1.pasture.hab.area * num.season.1.pasture.ad
+num.season.1.forest.pop  <- num.season.1.forest.hab.area * num.season.1.forest.ad
+num.season.2.pasture.pop <- num.season.2.pasture.hab.area * num.season.2.pasture.ad
+num.season.2.forest.pop  <- num.season.2.forest.hab.area * num.season.2.forest.ad
+```
+##### without stream access on-land
+```{r}
+num.season.1.pasture.wo.onland.pop <- num.season.1.pasture.hab.wo * num.season.1.pasture.ad
+num.season.1.forest.wo.onland.pop  <- num.season.1.forest.hab.wo * num.season.1.forest.ad
+num.season.2.pasture.wo.onland.pop <- num.season.2.pasture.hab.wo * num.season.2.pasture.ad
+num.season.2.forest.wo.onland.pop  <- num.season.2.forest.hab.wo * num.season.2.forest.ad
+```
+##### with stream access on-land
+```{r}
+num.season.1.pasture.w.onland.pop <- (1 - num.season.1.pasture.in.around.strm / 100) * 
+  num.season.1.pasture.hab.w * num.season.1.pasture.ad
+num.season.1.forest.w.onland.pop  <- (1 - num.season.1.forest.in.around.strm / 100) * 
+  num.season.1.forest.hab.w * num.season.1.forest.ad
+num.season.2.pasture.w.onland.pop <- (1 - num.season.2.pasture.in.around.strm / 100) * 
+  num.season.2.pasture.hab.w * num.season.2.pasture.ad
+num.season.2.forest.w.onland.pop  <- (1 - num.season.2.forest.in.around.strm / 100) * 
+  num.season.2.forest.hab.w * num.season.2.forest.ad
+```
+##### with stream access in stream
+```{r}
+num.season.1.pasture.w.instream.pop <- (num.season.1.pasture.in.around.strm / 100) * 
+  num.season.1.pasture.hab.w * num.season.1.pasture.ad
+num.season.1.forest.w.instream.pop  <- (num.season.1.forest.in.around.strm / 100) * 
+  num.season.1.forest.hab.w * num.season.1.forest.ad
+num.season.2.pasture.w.instream.pop <- (num.season.2.pasture.in.around.strm / 100) * 
+  num.season.2.pasture.hab.w * num.season.2.pasture.ad
+num.season.2.forest.w.instream.pop  <- (num.season.2.forest.in.around.strm / 100) * 
+  num.season.2.forest.hab.w * num.season.2.forest.ad
+```
+### Manual Calculation output data.frame
+```{r}
+df.output.manual.season.1 <- data.frame(sub = chr.sub.cur,
+  Month = format(as.POSIXct(paste0("1967-",num.months.season.1,"-01")), format = "%b"),
+  pop.total = num.season.1.pasture.pop + num.season.1.forest.pop,
+  pop.on.land = num.season.1.pasture.wo.onland.pop + num.season.1.forest.wo.onland.pop + 
+    num.season.1.pasture.w.onland.pop + num.season.1.forest.w.onland.pop,
+  pop.in.stream = num.season.1.pasture.w.instream.pop + num.season.1.forest.w.instream.pop,
+  Bacteria.total = num.fecal.coliform.production.by.animal * 
+    (num.season.1.pasture.pop + num.season.1.forest.pop),
+  Bacteria.on.land = num.fecal.coliform.production.by.animal * 
+    (num.season.1.pasture.wo.onland.pop + num.season.1.forest.wo.onland.pop + 
+    num.season.1.pasture.w.onland.pop + num.season.1.forest.w.onland.pop),
+  Bacteria.direct.to.stream = num.fecal.coliform.production.by.animal * 
+    (num.season.1.pasture.w.instream.pop + num.season.1.forest.w.instream.pop),
+  Accum.pasture = num.fecal.coliform.production.by.animal * 
+    (num.season.1.pasture.wo.onland.pop + num.season.1.pasture.w.onland.pop) / 
+    num.season.1.pasture.hab.area,
+  Accum.forest = num.fecal.coliform.production.by.animal * 
+    (num.season.1.forest.wo.onland.pop + num.season.1.forest.w.onland.pop) / 
+    num.season.1.forest.hab.area,
+  Lim.pasture = num.SQOLIM.mult.factor * num.fecal.coliform.production.by.animal * 
+    (num.season.1.pasture.wo.onland.pop + num.season.1.pasture.w.onland.pop) / 
+    num.season.1.pasture.hab.area,
+    Lim.forest = num.SQOLIM.mult.factor * num.fecal.coliform.production.by.animal * 
+    (num.season.1.forest.wo.onland.pop + num.season.1.forest.w.onland.pop) / 
+    num.season.1.forest.hab.area,
+    month.order = num.months.season.1,
+    stringsAsFactors=FALSE)
+df.output.manual.season.2 <- data.frame(sub = chr.sub.cur,
+  Month = format(as.POSIXct(paste0("1967-",num.months.season.2,"-01")), format = "%b"),
+  pop.total = num.season.2.pasture.pop + num.season.2.forest.pop,
+  pop.on.land = num.season.2.pasture.wo.onland.pop + num.season.2.forest.wo.onland.pop + 
+    num.season.2.pasture.w.onland.pop + num.season.2.forest.w.onland.pop,
+  pop.in.stream = num.season.2.pasture.w.instream.pop + num.season.2.forest.w.instream.pop,
+  Bacteria.total = num.fecal.coliform.production.by.animal * 
+    (num.season.2.pasture.pop + num.season.2.forest.pop),
+  Bacteria.on.land = num.fecal.coliform.production.by.animal * 
+    (num.season.2.pasture.wo.onland.pop + num.season.2.forest.wo.onland.pop + 
+    num.season.2.pasture.w.onland.pop + num.season.2.forest.w.onland.pop),
+  Bacteria.direct.to.stream = num.fecal.coliform.production.by.animal * 
+    (num.season.2.pasture.w.instream.pop + num.season.2.forest.w.instream.pop),
+  Accum.pasture = num.fecal.coliform.production.by.animal * 
+    (num.season.2.pasture.wo.onland.pop + num.season.2.pasture.w.onland.pop) / 
+    num.season.2.pasture.hab.area,
+  Accum.forest = num.fecal.coliform.production.by.animal * 
+    (num.season.2.forest.wo.onland.pop + num.season.2.forest.w.onland.pop) / 
+    num.season.2.forest.hab.area,
+  Lim.pasture = num.SQOLIM.mult.factor * num.fecal.coliform.production.by.animal * 
+    (num.season.2.pasture.wo.onland.pop + num.season.2.pasture.w.onland.pop) / 
+    num.season.2.pasture.hab.area,
+    Lim.forest = num.SQOLIM.mult.factor * num.fecal.coliform.production.by.animal * 
+    (num.season.2.forest.wo.onland.pop + num.season.2.forest.w.onland.pop) / 
+    num.season.2.forest.hab.area,
+    month.order = num.months.season.2,
+    stringsAsFactors=FALSE)
+df.output.manual <- rbind(df.output.manual.season.1, df.output.manual.season.2)
+df.output.manual <- df.output.manual[order(df.output.manual$month.order), ]
+df.output.manual <- df.output.manual[, -1 * grep("month.order", names(df.output.manual))]
+df.na <- df.output.manual[, -1 * c(1,2)]
+df.na[is.na(df.na)] <- 0
+df.output.manual <- cbind(df.output.manual[, c("sub", "Month")],
+                          df.na)
+```
+# Model
+## General Input
+```{r}
+library(bacteriaSourceModels)
+chr.dir.main <- "M:/Models/Bacteria/HSPF/bacteriaSourceModelsManualCalc"
+chr.dir.input <- paste0(chr.dir.main, "/R/model-input-tpl-txt/wildlife-elk")
+```
+## Run model for a single sub-watershed input file
+```{r}
+df.output.model <-  wildlife.Elk(paste0(chr.dir.input, "/wildlifeElk",chr.sub.cur, ".txt"))
+```
+# Comparison
+```{r}
+df.output.comp <- data.frame(df.output.manual[, c(1,2)], 
+                             df.output.manual[, -1 * c(1,2)] - 
+                               df.output.model[, -1 * c(1,2)])
+summary(df.output.comp[, -1*c(1,2)])
+```
